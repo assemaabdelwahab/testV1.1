@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   merchant_name TEXT,
   amount DECIMAL(10,2) NOT NULL,
   transaction_date DATE NOT NULL,
-  year_month TEXT GENERATED ALWAYS AS (to_char(transaction_date, 'YYYY-MM')) STORED,
+  year_month TEXT GENERATED ALWAYS AS (
+    EXTRACT(YEAR FROM transaction_date)::TEXT || '-' || LPAD(EXTRACT(MONTH FROM transaction_date)::TEXT, 2, '0')
+  ) STORED,
   created_at TIMESTAMPTZ DEFAULT now(),
   -- composite unique for idempotent inserts (dedup if Make retries)
   UNIQUE(merchant_name, amount, transaction_date)
