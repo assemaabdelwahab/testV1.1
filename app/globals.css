@@ -1,3 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Press+Start+2P&display=swap');
+
+@layer base {
+  * {
+    @apply border-slate-700;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-primary;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-500;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-card rounded-xl border border-slate-700/50 p-4 md:p-6;
+  }
+
+  .card-hover {
+    @apply card transition-colors hover:bg-bg-card-hover;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary
+           hover:text-text-primary hover:bg-bg-card-hover transition-colors text-sm;
+  }
+
+  .nav-item-active {
+    @apply nav-item text-text-primary bg-bg-card;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-accent-blue text-white rounded-lg hover:bg-blue-600
+           transition-colors font-medium text-sm;
+  }
+}
