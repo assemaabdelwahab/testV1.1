@@ -9,6 +9,7 @@ import {
   MerchantGroup,
 } from "./types";
 import { BUDGET_AMOUNTS } from "./constants";
+import { normalizeCategory } from "./utils";
 
 export async function getTransactionsByMonths(
   months: string[]
@@ -171,7 +172,7 @@ export async function insertTransaction(txn: {
   transaction_date: string;
 }): Promise<{ success: boolean; duplicate?: boolean; error?: string }> {
   const { error } = await supabase.from("transactions").insert({
-    category: txn.category,
+    category: normalizeCategory(txn.category),
     merchant_name: txn.merchant_name || null,
     amount: txn.amount,
     transaction_date: txn.transaction_date,

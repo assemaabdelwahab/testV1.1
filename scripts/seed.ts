@@ -17,6 +17,7 @@
 import { google } from "googleapis";
 import { createClient } from "@supabase/supabase-js";
 import { BUDGET_AMOUNTS } from "../lib/constants";
+import { normalizeCategory } from "../lib/utils";
 
 const SHEET_ID = "1-Hi_rKNndjUwr2xiXOpnkwqxTTxJ6JxOeZUfe-EDRxw";
 const RANGE = "Transactions!A:Z";
@@ -105,7 +106,7 @@ async function main() {
     }
 
     transactions.push({
-      category,
+      category: normalizeCategory(category),
       merchant_name,
       amount,
       transaction_date,

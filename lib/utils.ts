@@ -1,4 +1,42 @@
 import { QuarterInfo } from "./types";
+import { CATEGORIES } from "./constants";
+
+// Explicit aliases for known DeepSeek/sheet variants → canonical category names
+const CATEGORY_ALIASES: Record<string, string> = {
+  cashwithdrawal: "Cash Withdrawal",
+  diningout: "Dining Out",
+  onlinefooddelivery: "Online Food Delivery",
+  investment: "Investments",
+  "food delivery": "Online Food Delivery",
+  food: "Dining Out",
+  dining: "Dining Out",
+  transport: "Transportation",
+  instapay: "Instapay Transfers",
+  bills: "Bills & Utilities",
+  utilities: "Bills & Utilities",
+  health: "Health & Wellness",
+  wellness: "Health & Wellness",
+  loan: "Loans & Installments",
+  loans: "Loans & Installments",
+  installments: "Loans & Installments",
+  subscription: "Subscriptions",
+};
+
+export function normalizeCategory(raw: string): string {
+  const trimmed = raw?.trim() ?? "";
+  // 1. Exact match against canonical list
+  if ((CATEGORIES as readonly string[]).includes(trimmed)) return trimmed;
+  // 2. Case-insensitive exact match
+  const lower = trimmed.toLowerCase();
+  const exactCI = CATEGORIES.find((c) => c.toLowerCase() === lower);
+  if (exactCI) return exactCI;
+  // 3. Alias lookup (handles camelCase and common shorthand)
+  const noSpaceLower = lower.replace(/\s+/g, "");
+  if (CATEGORY_ALIASES[lower]) return CATEGORY_ALIASES[lower];
+  if (CATEGORY_ALIASES[noSpaceLower]) return CATEGORY_ALIASES[noSpaceLower];
+  // 4. Fallback
+  return "Others";
+}
 
 export function formatCurrency(amount: number): string {
   return `EGP ${amount.toLocaleString("en-US", {
