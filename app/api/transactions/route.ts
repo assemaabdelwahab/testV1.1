@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { insertTransaction } from "@/lib/queries";
 
 export async function POST(request: NextRequest) {
+  // API key auth — Make.com sends this in Authorization header
+  const apiKey = process.env.TRANSACTIONS_API_KEY;
+  if (apiKey) {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${apiKey}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const body = await request.json();
     const { category, merchant_name, amount, transaction_date } = body;
