@@ -89,10 +89,15 @@ async function main() {
 
     if (!category || isNaN(amount) || !rawDate) continue;
 
-    // Parse date - handle multiple formats
+    // Parse date - handle multiple formats including Excel serial numbers
     let transaction_date: string;
     if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
       transaction_date = rawDate;
+    } else if (/^\d+$/.test(rawDate)) {
+      // Excel serial number: days since Dec 30, 1899
+      const serial = parseInt(rawDate, 10);
+      const date = new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
+      transaction_date = date.toISOString().split("T")[0];
     } else {
       const d = new Date(rawDate);
       if (isNaN(d.getTime())) continue;
