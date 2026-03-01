@@ -3,7 +3,7 @@ import { insertTransaction } from "@/lib/queries";
 
 export async function POST(request: NextRequest) {
   // API key auth — Make.com sends this in Authorization header
-  const apiKey = process.env.TRANSACTIONS_API_KEY;
+  const apiKey = process.env.TRANSACTIONS_API_KEY?.trim();
   if (apiKey) {
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${apiKey}`) {
