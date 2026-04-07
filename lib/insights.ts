@@ -126,7 +126,8 @@ export function computeHeatmap(
   const [year, month] = selectedMonth.split("-").map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  // Group by date
+  // Group by date — exclude NON_DISCRETIONARY from intensity total (rent/loans/investments
+  // are fixed debits that would dominate the gradient and obscure day-to-day spending)
   const byDate = new Map<string, { total: number; merchants: Map<string, number> }>();
   for (const t of transactions) {
     if (t.year_month !== selectedMonth) continue;
@@ -134,7 +135,7 @@ export function computeHeatmap(
     if (!byDate.has(date)) byDate.set(date, { total: 0, merchants: new Map() });
     const day = byDate.get(date)!;
     const amt = toEGP(Number(t.amount), t.currency);
-    day.total += amt;
+    if (!NON_DISCRETIONARY.includes(t.category)) day.total += amt;
     const m = t.merchant_name || "Unknown";
     day.merchants.set(m, (day.merchants.get(m) || 0) + amt);
   }

@@ -13,7 +13,7 @@ interface Props {
 const DAY_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 // Inline colors — bypasses CSS class purging
-const HM_COLORS = ["#1C1C24", "#166534", "#15803D", "#16A34A", "#22C55E", "#4ADE80"];
+const HM_COLORS = ["#1C1C24", "#450A0A", "#7F1D1D", "#B91C1C", "#DC2626", "#EF4444"];
 
 function getWeekdayOffset(dateStr: string): number {
   const d = new Date(dateStr + "T00:00:00");

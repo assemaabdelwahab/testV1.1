@@ -85,11 +85,14 @@ export default function NarrativeContent() {
 
   // Correct a transaction in local state (from CategoryCorrection component)
   const handleCorrected = useCallback((txnId: string, newCategory: string) => {
-    setTransactions((prev) =>
-      prev.map((t) =>
-        t.id === txnId ? { ...t, category: newCategory, category_source: "manual" } : t
-      )
-    );
+    setTransactions((prev) => {
+      const merchantName = prev.find((t) => t.id === txnId)?.merchant_name;
+      return prev.map((t) =>
+        t.id === txnId || (merchantName && t.merchant_name === merchantName)
+          ? { ...t, category: newCategory, category_source: "manual" }
+          : t
+      );
+    });
   }, []);
 
   const canGoNext = selectedMonth < currentMonth;

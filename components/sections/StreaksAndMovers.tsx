@@ -34,12 +34,12 @@ function MonthDots({ history }: { history: CategoryStreak["monthHistory"] }) {
         else if (underBudget) bg = "#10B981";
         else bg = "#EF4444";
 
-        const label = new Date(month + "-02").toLocaleDateString("en-US", { month: "short" }).charAt(0);
+        const label = new Date(month + "-02").toLocaleDateString("en-US", { month: "short" });
 
         return (
           <div key={month} className="flex flex-col items-center gap-[3px]">
-            <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: bg, flexShrink: 0 }} />
-            <span style={{ fontSize: 7, color: "#6B7080", lineHeight: 1 }}>{label}</span>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: bg, flexShrink: 0 }} />
+            <span style={{ fontSize: 6, color: "#6B7080", lineHeight: 1 }}>{label}</span>
           </div>
         );
       })}

@@ -15,9 +15,6 @@ export default function CategoryCorrection({ transaction, onCorrected }: Props) 
   const [toast, setToast] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Disable correction for transactions with no merchant (can't create a rule)
-  if (!transaction.merchant_name) return null;
-
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -37,24 +34,32 @@ export default function CategoryCorrection({ transaction, onCorrected }: Props) 
     setSaving(true);
     setOpen(false);
     try {
-      await Promise.all([
+      const calls: Promise<Response>[] = [
         fetch(`/api/transactions/${transaction.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ category: newCategory }),
         }),
-        fetch("/api/corrections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            merchant_pattern: transaction.merchant_name,
-            correct_category: newCategory,
-            match_type: "exact",
-          }),
-        }),
-      ]);
+      ];
+      if (transaction.merchant_name) {
+        calls.push(
+          fetch("/api/corrections", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              merchant_pattern: transaction.merchant_name,
+              correct_category: newCategory,
+              match_type: "exact",
+            }),
+          })
+        );
+      }
+      await Promise.all(calls);
       onCorrected(transaction.id, newCategory);
-      setToast(`All "${transaction.merchant_name}" transactions → ${newCategory}`);
+      const toastMsg = transaction.merchant_name
+        ? `All "${transaction.merchant_name}" transactions → ${newCategory}`
+        : `Transaction updated → ${newCategory}`;
+      setToast(toastMsg);
       setTimeout(() => setToast(null), 3500);
     } catch {
       setToast("Failed to save correction");

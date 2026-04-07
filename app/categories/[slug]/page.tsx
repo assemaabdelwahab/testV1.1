@@ -52,11 +52,16 @@ function CategoryDetailContent() {
   }, [category, selectedMonth]);
 
   const handleCorrected = useCallback((txnId: string, newCategory: string) => {
-    setTransactions((prev) =>
-      prev
-        .map((t) => (t.id === txnId ? { ...t, category: newCategory, category_source: "manual" } : t))
-        .filter((t) => t.category === category) // remove if moved to a different category
-    );
+    setTransactions((prev) => {
+      const merchantName = prev.find((t) => t.id === txnId)?.merchant_name;
+      return prev
+        .map((t) =>
+          t.id === txnId || (merchantName && t.merchant_name === merchantName)
+            ? { ...t, category: newCategory, category_source: "manual" }
+            : t
+        )
+        .filter((t) => t.category === category);
+    });
   }, [category]);
 
   const total = transactions.reduce((sum, t) => sum + toEGP(Number(t.amount), t.currency), 0);
