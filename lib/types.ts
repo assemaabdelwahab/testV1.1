@@ -6,6 +6,17 @@ export interface Transaction {
   transaction_date: string;
   year_month: string;
   created_at: string;
+  category_source?: string;
+  currency?: string;
+}
+
+export interface CategoryCorrection {
+  id: string;
+  merchant_pattern: string;
+  correct_category: string;
+  match_type: 'exact' | 'contains';
+  source: 'manual' | 'seeded';
+  created_at: string;
 }
 
 export interface Budget {

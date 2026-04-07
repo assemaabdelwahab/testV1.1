@@ -2,51 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Press+Start+2P&display=swap');
+/* Satoshi from Fontshare */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap');
+/* JetBrains Mono from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @layer base {
   * {
-    @apply border-slate-700;
+    border-color: #1C1C24;
+  }
+
+  html {
+    background-color: #0A0A0F;
   }
 
   body {
-    @apply bg-bg-primary text-text-primary antialiased;
+    @apply bg-bg-base text-ink-primary antialiased font-sans;
   }
 
   ::-webkit-scrollbar {
-    @apply w-2;
+    width: 4px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-bg-primary;
+    background: #0A0A0F;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-600 rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-500;
+    background: #3A3A48;
+    border-radius: 2px;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-bg-card rounded-xl border border-slate-700/50 p-4 md:p-6;
+    @apply bg-bg-card rounded-card border border-bg-elevated p-5;
   }
 
-  .card-hover {
-    @apply card transition-colors hover:bg-bg-card-hover;
+  .num {
+    @apply font-mono tabular-nums;
   }
 
-  .nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary
-           hover:text-text-primary hover:bg-bg-card-hover transition-colors text-sm;
+  .section-label {
+    @apply text-xs font-medium tracking-widest uppercase text-ink-secondary;
   }
 
-  .nav-item-active {
-    @apply nav-item text-text-primary bg-bg-card;
+  /* Heatmap intensity levels — shifted up one stop for visibility on dark background */
+  .hm-0 { background-color: #1C1C24; }
+  .hm-1 { background-color: #166534; }
+  .hm-2 { background-color: #15803D; }
+  .hm-3 { background-color: #16A34A; }
+  .hm-4 { background-color: #22C55E; }
+  .hm-5 { background-color: #4ADE80; }
+  .hm-future { background-color: transparent; border: 1px solid #1C1C24; }
+
+  /* Progress bar track */
+  .progress-track {
+    @apply w-full h-1.5 bg-bg-elevated rounded-full overflow-hidden;
   }
 
-  .btn-primary {
-    @apply px-4 py-2 bg-accent-blue text-white rounded-lg hover:bg-blue-600
-           transition-colors font-medium text-sm;
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-up {
+    animation: fadeUp 0.4s ease-out both;
   }
 }

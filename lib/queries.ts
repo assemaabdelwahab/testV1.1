@@ -9,7 +9,7 @@ import {
   MerchantGroup,
 } from "./types";
 import { BUDGET_AMOUNTS } from "./constants";
-import { normalizeCategory } from "./utils";
+import { normalizeCategory, toEGP } from "./utils";
 
 export async function getTransactionsByMonths(
   months: string[]
@@ -29,7 +29,7 @@ export async function getSpendByMonth(
   const txns = await getTransactionsByMonths(months);
   const map = new Map<string, number>();
   for (const t of txns) {
-    map.set(t.year_month, (map.get(t.year_month) || 0) + Number(t.amount));
+    map.set(t.year_month, (map.get(t.year_month) || 0) + toEGP(Number(t.amount), t.currency));
   }
   return Array.from(map.entries())
     .map(([year_month, total]) => ({ year_month, total }))
@@ -43,7 +43,7 @@ export async function getSpendByCategory(
   const map = new Map<string, { total: number; count: number }>();
   for (const t of txns) {
     const existing = map.get(t.category) || { total: 0, count: 0 };
-    existing.total += Number(t.amount);
+    existing.total += toEGP(Number(t.amount), t.currency);
     existing.count += 1;
     map.set(t.category, existing);
   }
@@ -59,7 +59,7 @@ export async function getSpendByCategoryAndMonth(
   const map = new Map<string, number>();
   for (const t of txns) {
     const key = `${t.year_month}|${t.category}`;
-    map.set(key, (map.get(key) || 0) + Number(t.amount));
+    map.set(key, (map.get(key) || 0) + toEGP(Number(t.amount), t.currency));
   }
   return Array.from(map.entries())
     .map(([key, total]) => {
@@ -157,12 +157,49 @@ export async function getCategorySpendHistory(
   const map = new Map<string, number>();
   for (const m of months) map.set(m, 0);
   for (const t of data || []) {
-    map.set(t.year_month, (map.get(t.year_month) || 0) + Number(t.amount));
+    map.set(t.year_month, (map.get(t.year_month) || 0) + toEGP(Number(t.amount), t.currency));
   }
   return months.map((year_month) => ({
     year_month,
     total: map.get(year_month) || 0,
   }));
+}
+
+export async function updateTransactionCategory(
+  id: string,
+  category: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category, category_source: "manual" })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function upsertCorrectionAndBackfill(
+  merchantPattern: string,
+  correctCategory: string,
+  matchType: "exact" | "contains"
+): Promise<void> {
+  const { error: correctionError } = await supabase
+    .from("category_corrections")
+    .upsert(
+      {
+        merchant_pattern: merchantPattern,
+        correct_category: correctCategory,
+        match_type: matchType,
+        source: "manual",
+      },
+      { onConflict: "merchant_pattern" }
+    );
+  if (correctionError) throw correctionError;
+
+  // Retrospective: update all existing transactions for this merchant
+  const { error: backfillError } = await supabase
+    .from("transactions")
+    .update({ category: correctCategory, category_source: "manual" })
+    .ilike("merchant_name", merchantPattern);
+  if (backfillError) throw backfillError;
 }
 
 export async function insertTransaction(txn: {

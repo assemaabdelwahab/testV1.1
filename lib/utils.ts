@@ -1,5 +1,18 @@
 import { QuarterInfo } from "./types";
-import { CATEGORIES } from "./constants";
+import { CATEGORIES, FX_RATES_TO_EGP } from "./constants";
+
+export function toEGP(amount: number, currency?: string): number {
+  if (!currency || currency === "EGP") return amount;
+  const rate = FX_RATES_TO_EGP[currency.toUpperCase()];
+  return rate ? amount * rate : amount;
+}
+
+export function formatFxAmount(amount: number, currency: string): string {
+  return `${currency} ${amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 // Explicit aliases for known DeepSeek/sheet variants → canonical category names
 const CATEGORY_ALIASES: Record<string, string> = {
@@ -160,6 +173,30 @@ export function getLast6Months(): string[] {
   const now = new Date();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    );
+  }
+  return months;
+}
+
+export function getLast6MonthsFrom(baseMonth: string): string[] {
+  const [year, month] = baseMonth.split("-").map(Number);
+  const months: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(year, month - 1 - i, 1);
+    months.push(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    );
+  }
+  return months;
+}
+
+export function getLast12MonthsFrom(baseMonth: string): string[] {
+  const [year, month] = baseMonth.split("-").map(Number);
+  const months: string[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(year, month - 1 - i, 1);
     months.push(
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
     );

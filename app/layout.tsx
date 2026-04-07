@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
-import NavBar from "@/components/ui/NavBar";
-import Header from "@/components/ui/Header";
 
 export const metadata: Metadata = {
-  title: "Expense Tracker",
-  description: "Personal expense tracking and visualization",
+  title: "Expenses",
+  description: "Personal expense tracking",
 };
 
 export default function RootLayout({
@@ -15,18 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-bg-primary text-text-primary antialiased font-sans">
+    <html lang="en">
+      <body className="bg-bg-base text-ink-primary antialiased font-sans min-h-screen">
         <PrivacyProvider>
-          <div className="flex min-h-screen">
-            <NavBar />
-            <div className="flex-1 md:ml-56 flex flex-col min-h-screen">
-              <Header />
-              <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
-                {children}
-              </main>
-            </div>
-          </div>
+          {children}
         </PrivacyProvider>
       </body>
     </html>

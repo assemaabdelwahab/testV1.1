@@ -1,19 +1,29 @@
 "use client";
 
 import { usePrivacy } from "@/contexts/PrivacyContext";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatFxAmount } from "@/lib/utils";
 
 interface AmountProps {
   value: number;
+  currency?: string;
   className?: string;
   showSign?: boolean;
 }
 
-export default function Amount({ value, className = "", showSign }: AmountProps) {
+export default function Amount({ value, currency, className = "", showSign }: AmountProps) {
   const { privacyMode } = usePrivacy();
 
   if (privacyMode) {
     return <span className={className}>••••••</span>;
+  }
+
+  if (currency && currency !== "EGP") {
+    return (
+      <span className={className}>
+        <span className="text-xs font-medium text-yellow-500 mr-1">{currency}</span>
+        {formatFxAmount(Math.abs(value), currency).replace(`${currency} `, "")}
+      </span>
+    );
   }
 
   const formatted = formatCurrency(Math.abs(value));

@@ -12,18 +12,19 @@ export default {
     extend: {
       colors: {
         bg: {
-          primary: "#0F172A",
-          card: "#1E293B",
-          "card-hover": "#334155",
+          base: "#0A0A0F",
+          card: "#141419",
+          elevated: "#1C1C24",
         },
-        text: {
-          primary: "#F8FAFC",
-          secondary: "#94A3B8",
+        ink: {
+          primary: "#F0F0F5",
+          secondary: "#6B7080",
+          muted: "#3A3A48",
         },
-        accent: {
+        signal: {
           green: "#10B981",
+          amber: "#F59E0B",
           red: "#EF4444",
-          yellow: "#F59E0B",
           blue: "#3B82F6",
         },
         cat: {
@@ -44,8 +45,14 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        pixel: ["'Press Start 2P'", "cursive"],
+        sans: ["Satoshi", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+      maxWidth: {
+        narrative: "480px",
+      },
+      borderRadius: {
+        card: "14px",
       },
     },
   },

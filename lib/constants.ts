@@ -51,6 +51,13 @@ export const BUDGET_AMOUNTS: Record<string, number> = {
   Investments: 30000,
 };
 
+// Approximate EGP conversion rates — update when rate drifts significantly
+export const FX_RATES_TO_EGP: Record<string, number> = {
+  USD: 50.5,
+  EUR: 55.0,
+  GBP: 64.0,
+};
+
 export const CATEGORY_SLUGS: Record<string, string> = {
   Groceries: "groceries",
   "Dining Out": "dining-out",
@@ -71,3 +78,6 @@ export const CATEGORY_SLUGS: Record<string, string> = {
 export const SLUG_TO_CATEGORY: Record<string, string> = Object.fromEntries(
   Object.entries(CATEGORY_SLUGS).map(([cat, slug]) => [slug, cat])
 );
+
+// Categories where more spending = positive behavior (inverts mover direction coloring)
+export const BENEFICIAL_CATEGORIES = ["Investments"] as const;
