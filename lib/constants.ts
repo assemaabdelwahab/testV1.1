@@ -13,6 +13,7 @@ export const CATEGORIES = [
   "Fuel",
   "Others",
   "Investments",
+  "Finishing Appartment",
 ] as const;
 
 export type CategoryName = (typeof CATEGORIES)[number];
@@ -32,6 +33,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Fuel: "#14B8A6",
   Others: "#A1A1AA",
   Investments: "#22C55E",
+  "Finishing Appartment": "#D97706",
 };
 
 export const BUDGET_AMOUNTS: Record<string, number> = {
@@ -49,6 +51,7 @@ export const BUDGET_AMOUNTS: Record<string, number> = {
   Fuel: 5000,
   Others: 1000,
   Investments: 30000,
+  "Finishing Appartment": 1000,
 };
 
 // Approximate EGP conversion rates — update when rate drifts significantly
@@ -73,6 +76,7 @@ export const CATEGORY_SLUGS: Record<string, string> = {
   Fuel: "fuel",
   Others: "others",
   Investments: "investments",
+  "Finishing Appartment": "finishing-appartment",
 };
 
 export const SLUG_TO_CATEGORY: Record<string, string> = Object.fromEntries(

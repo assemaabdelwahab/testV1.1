@@ -28,7 +28,7 @@ function StatusBadge({ status }: { status: CategoryStreak["status"] }) {
 function MonthDots({ history }: { history: CategoryStreak["monthHistory"] }) {
   return (
     <div className="flex items-end gap-[3px] mt-2 ml-4">
-      {history.map(({ month, underBudget, hasData }) => {
+      {[...history].reverse().map(({ month, underBudget, hasData }) => {
         let bg: string;
         if (!hasData) bg = "#2A2A38";
         else if (underBudget) bg = "#10B981";
