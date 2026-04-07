@@ -17,6 +17,19 @@ interface Props {
   selectedMonth: string;
 }
 
+function SpendBreakdown({ data, privacyMode }: { data: PaceData; privacyMode: boolean }) {
+  if (privacyMode) return null;
+  const parts: string[] = [];
+  if (data.investmentSpend > 0) parts.push(`${formatCurrency(data.investmentSpend)} invested`);
+  if (data.fixedSpend > 0) parts.push(`${formatCurrency(data.fixedSpend)} fixed`);
+  if (parts.length === 0) return null;
+  return (
+    <p className="text-ink-secondary text-xs num">
+      {parts.join("  ·  ")}
+    </p>
+  );
+}
+
 export default function PaceHeadline({ data, selectedMonth }: Props) {
   const { privacyMode } = usePrivacy();
   const [year, month] = selectedMonth.split("-").map(Number);
@@ -47,14 +60,14 @@ export default function PaceHeadline({ data, selectedMonth }: Props) {
         </p>
         <div>
           <span className="text-4xl font-black text-ink-primary leading-none num">
-            {privacyMode ? "••••••" : formatCurrency(data.totalSpend)}
+            {privacyMode ? "••••••" : formatCurrency(data.discretionarySpend)}
           </span>
-          <span className="text-ink-secondary text-sm ml-2">spent so far</span>
+          <span className="text-ink-secondary text-sm ml-2">discretionary spend</span>
         </div>
         <p className="text-ink-secondary text-sm leading-relaxed">
           {privacyMode
-            ? `At ••% of ${monthLabel(prevMonth)}'s total. `
-            : `At ${Math.round(data.pacePercentage)}% of ${monthLabel(prevMonth)}'s total. `}
+            ? `At ••% of ${monthLabel(prevMonth)}'s discretionary. `
+            : `At ${Math.round(data.pacePercentage)}% of ${monthLabel(prevMonth)}'s discretionary. `}
           <span className={pacingColor + " font-medium"}>{pacingWord}</span>
         </p>
         {!privacyMode && data.projectedTotal > 0 && data.dayOfMonth >= 5 && (
@@ -62,13 +75,14 @@ export default function PaceHeadline({ data, selectedMonth }: Props) {
             Projected: <span className="text-ink-primary num font-semibold">{formatCurrency(data.projectedTotal)}</span>
           </p>
         )}
+        <SpendBreakdown data={data} privacyMode={privacyMode} />
       </div>
     );
   }
 
   // Completed month
-  const diff = data.totalSpend - data.previousMonthTotal;
-  const lighter = data.totalSpend < data.previousMonthTotal;
+  const diff = data.discretionarySpend - data.previousMonthTotal;
+  const lighter = data.discretionarySpend < data.previousMonthTotal;
   const diffWord = lighter ? "lighter" : "heavier";
   const diffColor = lighter ? "text-signal-green" : "text-signal-red";
 
@@ -79,9 +93,9 @@ export default function PaceHeadline({ data, selectedMonth }: Props) {
       </p>
       <div>
         <span className="text-4xl font-black text-ink-primary leading-none num">
-          {privacyMode ? "••••••" : formatCurrency(data.totalSpend)}
+          {privacyMode ? "••••••" : formatCurrency(data.discretionarySpend)}
         </span>
-        <span className="text-ink-secondary text-sm ml-2">total</span>
+        <span className="text-ink-secondary text-sm ml-2">discretionary</span>
       </div>
       <p className="text-ink-secondary text-sm leading-relaxed">
         A <span className={diffColor + " font-medium"}>{diffWord}</span> month.{" "}
@@ -93,12 +107,13 @@ export default function PaceHeadline({ data, selectedMonth }: Props) {
       </p>
       {!privacyMode && data.previousMonthTotal > 0 && (
         <p className="text-ink-secondary text-xs">
-          vs {monthLabel(prevMonth)}:{" "}
+          vs {monthLabel(prevMonth)} discretionary:{" "}
           <span className={diffColor + " font-semibold num"}>
             {diff >= 0 ? "+" : ""}{formatCurrency(Math.abs(diff))}
           </span>
         </p>
       )}
+      <SpendBreakdown data={data} privacyMode={privacyMode} />
     </div>
   );
 }

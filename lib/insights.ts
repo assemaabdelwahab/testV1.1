@@ -30,14 +30,31 @@ export interface PaceHeadline {
   isCurrentMonth: boolean;
   dayOfMonth: number;
   daysInMonth: number;
-  totalSpend: number;
-  previousMonthTotal: number;
+  totalSpend: number;          // raw total (all categories) — used for noData only
+  discretionarySpend: number;  // hero: excludes Rent, Loans & Installments, Investments
+  investmentSpend: number;     // Investments only
+  fixedSpend: number;          // Rent + Loans & Installments
+  previousMonthTotal: number;  // previous month's discretionary (for pace comparison)
   pacePercentage: number;
   projectedTotal: number;
   pacing: "under" | "over" | "on_track";
   categoriesImproved: number;
   categoriesWorsened: number;
   noData: boolean;
+}
+
+const FIXED_CATS = ["Rent", "Loans & Installments"];
+const INVEST_CAT = "Investments";
+
+function spendBuckets(catMap: Map<string, number>): { disc: number; invest: number; fixed: number } {
+  let invest = 0, fixed = 0, disc = 0;
+  for (const [cat, amt] of catMap) {
+    if (cat === "__TOTAL__") continue;
+    if (cat === INVEST_CAT) invest += amt;
+    else if (FIXED_CATS.includes(cat)) fixed += amt;
+    else disc += amt;
+  }
+  return { disc, invest, fixed };
 }
 
 export function computePaceHeadline(
@@ -57,14 +74,24 @@ export function computePaceHeadline(
   // Previous month
   const prevDate = new Date(year, month - 2, 1);
   const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
-  const previousMonthTotal = monthlyTotals.get(prevMonth)?.get("__TOTAL__") ?? 0;
 
-  const noData = totalSpend === 0 && previousMonthTotal === 0;
+  // Bucket current and previous month
+  const curMap = monthlyTotals.get(selectedMonth) || new Map<string, number>();
+  const prevMap = monthlyTotals.get(prevMonth) || new Map<string, number>();
+  const cur = spendBuckets(curMap);
+  const prev = spendBuckets(prevMap);
+
+  const discretionarySpend = cur.disc;
+  const investmentSpend = cur.invest;
+  const fixedSpend = cur.fixed;
+  const previousMonthTotal = prev.disc; // pace compares discretionary-to-discretionary
+
+  const noData = totalSpend === 0 && (prev.disc + prev.invest + prev.fixed) === 0;
 
   const pacePercentage =
-    previousMonthTotal > 0 ? (totalSpend / previousMonthTotal) * 100 : 0;
+    previousMonthTotal > 0 ? (discretionarySpend / previousMonthTotal) * 100 : 0;
   const projectedTotal =
-    dayOfMonth > 0 ? (totalSpend / dayOfMonth) * daysInMonth : 0;
+    dayOfMonth > 0 ? (discretionarySpend / dayOfMonth) * daysInMonth : 0;
 
   const expectedPct = (dayOfMonth / daysInMonth) * 100;
   const pacing: "under" | "over" | "on_track" =
@@ -74,20 +101,18 @@ export function computePaceHeadline(
       ? "over"
       : "on_track";
 
-  // Completed month: count categories improved/worsened
+  // Completed month: count categories improved/worsened (discretionary only)
   let categoriesImproved = 0;
   let categoriesWorsened = 0;
   if (!isCurrentMonth) {
-    const curMap = monthlyTotals.get(selectedMonth) || new Map<string, number>();
-    const prevMap = monthlyTotals.get(prevMonth) || new Map<string, number>();
     const allCats = new Set([...curMap.keys(), ...prevMap.keys()]);
     allCats.delete("__TOTAL__");
     for (const cat of allCats) {
       if (NON_DISCRETIONARY.includes(cat)) continue;
-      const cur = curMap.get(cat) ?? 0;
-      const prev = prevMap.get(cat) ?? 0;
-      if (cur < prev) categoriesImproved++;
-      else if (cur > prev) categoriesWorsened++;
+      const c = curMap.get(cat) ?? 0;
+      const p = prevMap.get(cat) ?? 0;
+      if (c < p) categoriesImproved++;
+      else if (c > p) categoriesWorsened++;
     }
   }
 
@@ -96,6 +121,9 @@ export function computePaceHeadline(
     dayOfMonth,
     daysInMonth,
     totalSpend,
+    discretionarySpend,
+    investmentSpend,
+    fixedSpend,
     previousMonthTotal,
     pacePercentage,
     projectedTotal,
