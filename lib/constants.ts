@@ -85,3 +85,12 @@ export const SLUG_TO_CATEGORY: Record<string, string> = Object.fromEntries(
 
 // Categories where more spending = positive behavior (inverts mover direction coloring)
 export const BENEFICIAL_CATEGORIES = ["Investments"] as const;
+
+// Fixed costs — agent will never suggest cutting these
+export const FIXED_CATEGORIES = [
+  "Rent",
+  "Loans & Installments",
+  "Finishing Appartment",
+] as const;
+
+export const AGENT_MODEL = "deepseek-chat";
