@@ -1,11 +1,13 @@
 'use client';
 
 import { useScenario } from './ScenarioProvider';
+import { usePrivacy } from '@/components/PrivacyProvider';
 
 interface Props { open: boolean; onClose: () => void; }
 
 export default function AssumptionsDrawer({ open, onClose }: Props) {
   const { assumptions, updateAssumptions, result } = useScenario();
+  const { s } = usePrivacy();
   if (!open) return null;
 
   const target = (assumptions.retirementMonthlySpendEGP * 12 / assumptions.egpUsdToday) / assumptions.swr;
@@ -57,10 +59,10 @@ export default function AssumptionsDrawer({ open, onClose }: Props) {
             <span style={{ fontSize: 12, padding: '1px 8px', borderRadius: 'var(--radius-pill)', background: 'rgba(235,181,77,0.12)', color: 'var(--brand-dim)' }}>assumed</span>
           </div>
           <div className="scenario-mono" style={{ fontSize: 24, fontWeight: 700, color: 'var(--brand)', marginBottom: 4 }}>
-            EGP {assumptions.retirementMonthlySpendEGP.toLocaleString()}/mo
+            {s(`EGP ${assumptions.retirementMonthlySpendEGP.toLocaleString()}/mo`)}
           </div>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-3)', marginBottom: 12 }}>
-            → target ${Math.round(target).toLocaleString()} · free {result.freedomDate ?? '—'}
+            → target {s(`$${Math.round(target).toLocaleString()}`)} · free {result.freedomDate ?? '—'}
           </div>
           <input
             type="range"

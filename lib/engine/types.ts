@@ -46,10 +46,13 @@ export interface Liability {
 
 export type Block = OneTimeCashflow | RecurringCashflow | Asset | Liability;
 
+export type EventStatus = 'committed' | 'planning' | 'hypothetical';
+
 export interface ScenarioEvent {
   id: string;
   name: string;
   enabled: boolean;
+  status: EventStatus;
   blocks: Block[];
 }
 
@@ -117,6 +120,10 @@ export interface FundingOption {
   loanMonthlyPaymentEGP?: number; // for 'loan'
   loanTermMonths?: number;
   note: string;
+  recommended?: boolean; // highest-ranked option
+  burdenPct?: number; // monthly installment / monthly surplus × 100
+  freedomDeltaMonths?: number; // retirement delay specific to this funding approach
+  rationale?: string; // why this is recommended (or why not)
 }
 
 export interface AffordabilityReport {
@@ -125,6 +132,7 @@ export interface AffordabilityReport {
   proposedDate: string;
   canAffordNow: 'yes' | 'tight' | 'no';
   fundingBreakdown: FundingOption[];
+  recommendedMethod: 'cash' | 'loan' | 'liquidate-egx' | null;
   earliestAffordableDate: string | null;
   retirementDeltaMonths: number; // positive = retirement pushed out
   retirementDeltaAtEarliest: number | null;
@@ -132,4 +140,5 @@ export interface AffordabilityReport {
   debtServicePctAfter: number;
   baselineFreedomDate: string | null;
   withEventFreedomDate: string | null;
+  monthlySurplusUSD: number; // for burden % context in UI
 }

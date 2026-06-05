@@ -1,26 +1,30 @@
 'use client';
 
 import { useScenario } from './ScenarioProvider';
-import { fmtUSD } from '@/lib/format';
+import { usePrivacy } from '@/components/PrivacyProvider';
 
 export default function FactCheckRibbon() {
   const { assumptions } = useScenario();
+  const { s } = usePrivacy();
 
-  const items: { label: string; value: string; tag: 'assumed' | 'measured' }[] = [
+  const items: { label: string; value: string; tag: 'assumed' | 'measured'; sensitive?: boolean }[] = [
     {
       label: 'Monthly spend',
       value: `EGP ${(98_185).toLocaleString()}`,
       tag: 'assumed',
+      sensitive: true,
     },
     {
       label: 'Retirement spend',
       value: `EGP ${assumptions.retirementMonthlySpendEGP.toLocaleString()}`,
       tag: 'assumed',
+      sensitive: true,
     },
     {
       label: 'Salary',
       value: '$5,500/mo',
       tag: 'assumed',
+      sensitive: true,
     },
     {
       label: 'Tracker burn',
@@ -52,7 +56,7 @@ export default function FactCheckRibbon() {
             {item.tag}
           </span>
           <span style={{ fontSize: 'var(--fs-sm)', color: item.tag === 'measured' ? 'var(--text-3)' : 'var(--text-2)' }}>
-            {item.value}
+            {item.sensitive ? s(item.value) : item.value}
           </span>
         </div>
       ))}

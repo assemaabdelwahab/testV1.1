@@ -1,11 +1,13 @@
 'use client';
 
 import { useScenario } from './ScenarioProvider';
+import { usePrivacy } from '@/components/PrivacyProvider';
 import { ageAt } from '@/lib/age';
 import { fmtMonth, fmtDuration, fmtUSD } from '@/lib/format';
 
 export default function FreedomHeadline() {
   const { result, assumptions } = useScenario();
+  const { s } = usePrivacy();
   const { freedomDate, monthsToFreedom, freedomDateM1, freedomDateM2 } = result;
   const { birthDate } = assumptions;
 
@@ -39,7 +41,7 @@ export default function FreedomHeadline() {
       <div className="flex gap-3 flex-wrap">
         <Clock
           name="by the math"
-          desc={`25× retirement spend (${fmtUSD((assumptions.retirementMonthlySpendEGP * 12 / assumptions.egpUsdToday) / assumptions.swr)})`}
+          desc={`25× retirement spend (${s(fmtUSD((assumptions.retirementMonthlySpendEGP * 12 / assumptions.egpUsdToday) / assumptions.swr))})`}
           age={mathAge}
           date={freedomDate}
           color="var(--positive)"

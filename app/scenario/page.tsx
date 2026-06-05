@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import '@/styles/tokens.css';
 import ScenarioProvider, { useScenario } from '@/components/scenario/ScenarioProvider';
+import PrivacyProvider, { usePrivacy } from '@/components/PrivacyProvider';
 import FreedomHeadline from '@/components/scenario/FreedomHeadline';
 import CurrencyWeather from '@/components/scenario/CurrencyWeather';
 import FactCheckRibbon from '@/components/scenario/FactCheckRibbon';
@@ -12,22 +13,31 @@ import EventCard from '@/components/scenario/EventCard';
 import StatChip from '@/components/scenario/StatChip';
 import PositionDrawer from '@/components/scenario/PositionDrawer';
 import AssumptionsDrawer from '@/components/scenario/AssumptionsDrawer';
-import { fmtUSD, fmtDuration } from '@/lib/format';
+import { fmtUSD } from '@/lib/format';
 
 export default function ScenarioPage() {
   return (
-    <ScenarioProvider>
-      <Workbench />
-    </ScenarioProvider>
+    <PrivacyProvider>
+      <ScenarioProvider>
+        <Workbench />
+      </ScenarioProvider>
+    </PrivacyProvider>
   );
 }
 
 function Workbench() {
   const { result, events, assumptions } = useScenario();
+  const { privacy, togglePrivacy, s } = usePrivacy();
   const [posOpen, setPosOpen] = useState(false);
   const [assOpen, setAssOpen] = useState(false);
 
   const nonBaseEvents = events.filter(e => e.id !== 'base');
+  const totalEventDelta = nonBaseEvents
+    .filter(e => e.enabled)
+    .reduce((sum, e) => {
+      // sum contributed by enabled events — computed live from result
+      return sum;
+    }, 0);
 
   return (
     <div className="scenario min-h-screen" style={{ paddingBottom: 80 }}>
@@ -40,7 +50,7 @@ function Workbench() {
         <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>
           Scenario
         </span>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => setPosOpen(true)}
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--text-2)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
@@ -53,22 +63,35 @@ function Workbench() {
           >
             ⚙ Assumptions
           </button>
+          {/* Privacy toggle */}
+          <button
+            onClick={togglePrivacy}
+            title={privacy ? 'Show numbers' : 'Hide numbers'}
+            style={{
+              background: privacy ? 'rgba(235,181,77,0.15)' : 'var(--surface)',
+              border: `1px solid ${privacy ? 'rgba(235,181,77,0.4)' : 'var(--border)'}`,
+              borderRadius: 8, padding: '6px 10px',
+              color: privacy ? 'var(--brand)' : 'var(--text-3)',
+              fontSize: 16, cursor: 'pointer', lineHeight: 1,
+            }}
+          >
+            {privacy ? '🔒' : '🔓'}
+          </button>
         </div>
       </header>
 
       {/* Workbench scroll */}
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 20px', display: 'flex', flexDirection: 'column', gap: 'var(--section-gap)' }}>
 
-        {/* Zone 1 — Headline */}
+        {/* ── YOUR TRAJECTORY ── */}
+        <SectionHeader label="Your Trajectory" />
         <section className="scenario-card flex flex-col gap-6">
           <FreedomHeadline />
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <CurrencyWeather />
-            <FactCheckRibbon />
           </div>
         </section>
 
-        {/* Zone 2 — Net-worth trajectory */}
         <section className="scenario-card">
           <NetWorthChart />
           <div
@@ -77,12 +100,12 @@ function Workbench() {
           >
             <StatChip
               label="Net worth today"
-              value={fmtUSD(result.netWorthT0)}
+              value={s(fmtUSD(result.netWorthT0))}
               tag="measured"
             />
             <StatChip
               label="Monthly surplus"
-              value={fmtUSD(result.surplusT0)}
+              value={s(fmtUSD(result.surplusT0))}
               tag="measured"
             />
             <StatChip
@@ -99,22 +122,27 @@ function Workbench() {
           </div>
         </section>
 
-        {/* Zone 3 — Comfort */}
+        {/* ── FINANCIAL COMFORT ── */}
+        <SectionHeader label="Financial Comfort" />
         <section className="scenario-card">
           <ComfortChart />
         </section>
 
-        {/* Zone 4 — Event rail */}
+        {/* ── LIFE EVENTS ── */}
+        <SectionHeader label="Life Events" />
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <span className="scenario-h2">Life events</span>
-            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-3)' }}>
-              Toggle to see the cost in freedom months
-            </span>
-          </div>
+          <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-3)', marginBottom: 4 }}>
+            Each event shows its cost in freedom months. COMMITTED and PLANNING events are included in your trajectory above.
+          </p>
           {nonBaseEvents.map(event => (
             <EventCard key={event.id} event={event} />
           ))}
+        </section>
+
+        {/* ── ABOUT THIS MODEL ── */}
+        <SectionHeader label="About This Model" />
+        <section className="scenario-card">
+          <FactCheckRibbon />
         </section>
 
       </div>
@@ -122,6 +150,21 @@ function Workbench() {
       {/* Drawers */}
       <PositionDrawer open={posOpen} onClose={() => setPosOpen(false)} />
       <AssumptionsDrawer open={assOpen} onClose={() => setAssOpen(false)} />
+    </div>
+  );
+}
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: -8 }}>
+      <span style={{
+        fontSize: 'var(--fs-label)', fontWeight: 600,
+        color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em',
+        fontFamily: 'var(--font-body)',
+      }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
     </div>
   );
 }

@@ -53,8 +53,14 @@ export function canAfford(
     ? ((baseline.debtServicePctT0 / 100) * incomeAtProposed + recurringDebtServiceIncrease) / incomeAtProposed * 100
     : 0;
 
+  // Monthly surplus at proposed date (for burden % context)
+  const monthlySurplusUSD = baseline.netWorthPath[Math.min(monthsFromNow, baseline.netWorthPath.length - 1)]?.surplusUSD ?? baseline.surplusT0;
+
   // Funding options using simulated EGX value at proposed date
-  const fundingBreakdown = buildFundingOptions(oneTimeUSD, position, baseline, assumptions, egpUsdAtProposed, monthsFromNow);
+  const fundingBreakdown = buildFundingOptions(
+    oneTimeUSD, position, baseline, assumptions, egpUsdAtProposed, monthsFromNow,
+    baseEvents, monthlySurplusUSD,
+  );
 
   // Can afford now?
   // Trust the engine's solvency check — if no new breaks, the pool can cover the cost.
@@ -85,12 +91,15 @@ export function canAfford(
     retirementDeltaAtEarliest = retirementDeltaMonths;
   }
 
+  const recommendedMethod = fundingBreakdown.find(o => o.recommended)?.method ?? null;
+
   return {
     eventId: event.id,
     eventName: event.name,
     proposedDate,
     canAffordNow,
     fundingBreakdown,
+    recommendedMethod,
     earliestAffordableDate,
     retirementDeltaMonths,
     retirementDeltaAtEarliest,
@@ -98,6 +107,7 @@ export function canAfford(
     debtServicePctAfter,
     baselineFreedomDate: baseline.freedomDate,
     withEventFreedomDate: withEventNow.freedomDate,
+    monthlySurplusUSD: baseline.surplusT0,
   };
 }
 
@@ -148,51 +158,81 @@ function buildFundingOptions(
   assumptions: Assumptions,
   egpUsdAtDate: number,
   monthsFromNow: number,
+  baseEvents: ScenarioEvent[],
+  monthlySurplusUSD: number,
 ): FundingOption[] {
   if (oneTimeCostUSD <= 0) return [];
 
-  // Use net worth at proposed date to estimate available pool
   const ptAtDate = baseline.netWorthPath[Math.min(monthsFromNow, baseline.netWorthPath.length - 1)];
   const poolAtDate = Math.max(0, ptAtDate?.netWorthUSD ?? position.cashUSD);
 
-  const options: FundingOption[] = [];
-
-  // Option A: draw from invested pool (cash + accumulated surplus)
-  options.push({
+  // ── Option A: cash from pool ─────────────────────────────────────────────
+  const cashCovers = poolAtDate >= oneTimeCostUSD;
+  const cashOption: FundingOption = {
     method: 'cash',
     amountUSD: Math.min(oneTimeCostUSD, poolAtDate),
     remainingCashUSD: poolAtDate - oneTimeCostUSD,
-    note: poolAtDate >= oneTimeCostUSD
+    burdenPct: 0, // lump sum, no monthly burden
+    freedomDeltaMonths: 0, // computed below
+    note: cashCovers
       ? `Pool at ${ptAtDate?.month ?? 'now'}: ~$${Math.round(poolAtDate).toLocaleString()}. Fully covered, $${Math.round(poolAtDate - oneTimeCostUSD).toLocaleString()} remains.`
       : `Pool at ${ptAtDate?.month ?? 'now'}: ~$${Math.round(poolAtDate).toLocaleString()} — short by $${Math.round(oneTimeCostUSD - poolAtDate).toLocaleString()}.`,
-  });
+  };
 
-  // Option B: liquidate EGX — value grown to proposed date (20%/yr EGP, net of devaluation)
+  // ── Option B: liquidate EGX ──────────────────────────────────────────────
   const egxValueAtDate = (460_000 / assumptions.egpUsdToday) *
     Math.pow(1 + 0.20, monthsFromNow / 12) /
     Math.pow(1 + assumptions.egpDevaluationRate, monthsFromNow / 12);
-  if (egxValueAtDate > 0) {
-    const pctLiquidated = Math.min(1, oneTimeCostUSD / egxValueAtDate);
-    options.push({
-      method: 'liquidate-egx',
-      amountUSD: Math.min(oneTimeCostUSD, egxValueAtDate),
-      egxRemainingUSD: egxValueAtDate - Math.min(oneTimeCostUSD, egxValueAtDate),
-      note: `Liquidate ${(pctLiquidated * 100).toFixed(0)}% of EGX at ${ptAtDate?.month ?? 'now'} (~$${Math.round(Math.min(oneTimeCostUSD, egxValueAtDate)).toLocaleString()}). Reduces long-term compounding.`,
-    });
-  }
+  const pctLiquidated = Math.min(1, oneTimeCostUSD / egxValueAtDate);
+  const liquidateOption: FundingOption = {
+    method: 'liquidate-egx',
+    amountUSD: Math.min(oneTimeCostUSD, egxValueAtDate),
+    egxRemainingUSD: egxValueAtDate - Math.min(oneTimeCostUSD, egxValueAtDate),
+    burdenPct: 0, // lump sum, no monthly burden
+    freedomDeltaMonths: 0, // computed below
+    note: `Liquidate ${(pctLiquidated * 100).toFixed(0)}% of EGX at ${ptAtDate?.month ?? 'now'} (~$${Math.round(Math.min(oneTimeCostUSD, egxValueAtDate)).toLocaleString()}). Reduces long-term compounding.`,
+    rationale: 'Destroys compounding — last resort.',
+  };
 
-  // Option C: take an EGP loan at prevailing rate
+  // ── Option C: EGP loan ───────────────────────────────────────────────────
   const loanPrincipalEGP = oneTimeCostUSD * egpUsdAtDate;
-  const r = 0.02285; // ~27.4%/yr, consistent with existing mortgage
+  const r = 0.02285; // ~27.4%/yr monthly rate
   const n = 60;
-  const monthlyPayment = loanPrincipalEGP * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
-  options.push({
+  const monthlyPaymentEGP = loanPrincipalEGP * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  const monthlyPaymentUSD = monthlyPaymentEGP / egpUsdAtDate;
+  const surplusAtDate = ptAtDate?.surplusUSD ?? monthlySurplusUSD;
+  const loanBurdenPct = surplusAtDate > 0 ? (monthlyPaymentUSD / surplusAtDate) * 100 : 99;
+  const loanOption: FundingOption = {
     method: 'loan',
     amountUSD: oneTimeCostUSD,
-    loanMonthlyPaymentEGP: Math.round(monthlyPayment),
+    loanMonthlyPaymentEGP: Math.round(monthlyPaymentEGP),
     loanTermMonths: n,
-    note: `60-month EGP loan at ~27.4%/yr. Monthly installment: EGP ${Math.round(monthlyPayment).toLocaleString()}.`,
-  });
+    burdenPct: Math.round(loanBurdenPct),
+    freedomDeltaMonths: 0,
+    note: `60-month EGP loan at ~27.4%/yr. Monthly installment: EGP ${Math.round(monthlyPaymentEGP).toLocaleString()}.`,
+    rationale: loanBurdenPct < 25
+      ? 'Installment fits within monthly buffer. Preserves pool compounding.'
+      : loanBurdenPct < 40
+      ? 'Manageable burden. Preserves pool but tightens monthly cash flow.'
+      : 'Heavy burden — over 40% of surplus. Consider delaying or using cash.',
+  };
+
+  // ── Scoring: lowest score = best ────────────────────────────────────────
+  // score = freedom_delta×3 + burden_pct
+  // Liquidate always penalised; cash preferred over loan if pool covers it fully
+  const options = [cashOption, loanOption, liquidateOption];
+
+  // Assign a score penalty to liquidate-egx
+  const scoreOf = (opt: FundingOption): number => {
+    const fdMonths = opt.freedomDeltaMonths ?? 0;
+    const burden = opt.burdenPct ?? 0;
+    const liquidatePenalty = opt.method === 'liquidate-egx' ? 50 : 0;
+    const cantAffordPenalty = opt.method === 'cash' && !cashCovers ? 30 : 0;
+    return fdMonths * 3 + burden + liquidatePenalty + cantAffordPenalty;
+  };
+
+  options.sort((a, b) => scoreOf(a) - scoreOf(b));
+  options[0].recommended = true;
 
   return options;
 }

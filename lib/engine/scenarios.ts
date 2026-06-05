@@ -28,6 +28,7 @@ export const EVENTS: ScenarioEvent[] = [
     id: 'base',
     name: 'Base (always on)',
     enabled: true,
+    status: 'committed' as const,
     blocks: [
       // ── Assets ──
       {
@@ -103,7 +104,8 @@ export const EVENTS: ScenarioEvent[] = [
   {
     id: 'apartment-finishing',
     name: 'Apartment finishing',
-    enabled: false,
+    enabled: true,
+    status: 'committed' as const,
     blocks: [
       {
         type: 'OneTimeCashflow',
@@ -118,7 +120,8 @@ export const EVENTS: ScenarioEvent[] = [
   {
     id: 'marriage',
     name: 'Marriage (~Dec 2027)',
-    enabled: false,
+    enabled: true,
+    status: 'planning' as const,
     blocks: [
       {
         type: 'OneTimeCashflow',
@@ -134,6 +137,7 @@ export const EVENTS: ScenarioEvent[] = [
     id: 'car-purchase',
     name: 'Car purchase',
     enabled: false,
+    status: 'hypothetical' as const,
     blocks: [
       {
         type: 'OneTimeCashflow',
@@ -149,6 +153,7 @@ export const EVENTS: ScenarioEvent[] = [
     id: 'kid-1',
     name: 'First child',
     enabled: false,
+    status: 'hypothetical' as const,
     blocks: [
       {
         type: 'RecurringCashflow',
@@ -165,6 +170,7 @@ export const EVENTS: ScenarioEvent[] = [
     id: 'kid-2',
     name: 'Second child',
     enabled: false,
+    status: 'hypothetical' as const,
     blocks: [
       {
         type: 'RecurringCashflow',
