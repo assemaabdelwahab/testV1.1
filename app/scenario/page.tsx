@@ -14,6 +14,7 @@ import StatChip from '@/components/scenario/StatChip';
 import PositionDrawer from '@/components/scenario/PositionDrawer';
 import AssumptionsDrawer from '@/components/scenario/AssumptionsDrawer';
 import EventStatusBar from '@/components/scenario/EventStatusBar';
+import DriftPanel from '@/components/scenario/DriftPanel';
 import { fmtUSD } from '@/lib/format';
 
 export default function ScenarioPage() {
@@ -27,7 +28,7 @@ export default function ScenarioPage() {
 }
 
 function Workbench() {
-  const { result, events, assumptions } = useScenario();
+  const { result, events, assumptions, latestDrift } = useScenario();
   const { privacy, togglePrivacy, s } = usePrivacy();
   const [posOpen, setPosOpen] = useState(false);
   const [assOpen, setAssOpen] = useState(false);
@@ -48,9 +49,23 @@ function Workbench() {
         background: 'var(--bg)', borderBottom: '1px solid var(--border)',
         padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>
-          Scenario
-        </span>
+        <div className="flex items-center gap-3">
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>
+            Scenario
+          </span>
+          {latestDrift && (
+            <span style={{
+              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+              background: latestDrift.deltaUsd >= 0 ? 'rgba(111,185,140,0.15)' : 'rgba(220,60,60,0.12)',
+              color: latestDrift.deltaUsd >= 0 ? 'var(--positive)' : 'var(--negative)',
+              border: `1px solid ${latestDrift.deltaUsd >= 0 ? 'rgba(111,185,140,0.3)' : 'rgba(220,60,60,0.25)'}`,
+            }}>
+              {Math.abs(latestDrift.deltaUsd) < 500
+                ? 'on track'
+                : `${latestDrift.deltaUsd >= 0 ? '↑' : '↓'} ${Math.abs(latestDrift.deltaPct).toFixed(1)}% vs plan`}
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 items-center">
           <button
             onClick={() => setPosOpen(true)}
@@ -128,6 +143,12 @@ function Workbench() {
         <SectionHeader label="Financial Comfort" />
         <section className="scenario-card">
           <ComfortChart />
+        </section>
+
+        {/* ── REALITY CHECK ── */}
+        <SectionHeader label="Reality Check" />
+        <section className="scenario-card">
+          <DriftPanel />
         </section>
 
         {/* ── LIFE EVENTS ── */}
