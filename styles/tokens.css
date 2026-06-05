@@ -1,0 +1,95 @@
+/* Design System v2 — warm dark. Shared by Scenario Workbench (Phase 1) and Tracker (Phase 2). */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600;12..96,700&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ── Surfaces — warm graphite ── */
+  --bg:        #15120E;
+  --surface:   #211D17;
+  --surface-2: #2B2620;
+  --border:    #3A342B;
+
+  /* ── Text — warm bone ── */
+  --text:   #F5F0E6;
+  --text-2: #B8AF9E;
+  --text-3: #8A8071;
+
+  /* ── Brand — brass/gold ── */
+  --brand:     #EBB54D;
+  --brand-dim: #A87E2C;
+
+  /* ── Semantics ── */
+  --positive:  #6FB98C;
+  --negative:  #D9694E;
+
+  /* ── Typography ── */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body:    'Geist', system-ui, sans-serif;
+  --font-mono:    'Geist Mono', monospace;
+
+  /* ── Scale ── */
+  --fs-hero:  clamp(56px, 14vw, 96px);
+  --fs-h1:    32px;
+  --fs-h2:    24px;
+  --fs-body:  17px;
+  --fs-sm:    15px;
+  --fs-label: 13px;
+
+  /* ── Shape ── */
+  --radius-card:    16px;
+  --radius-control: 12px;
+  --radius-pill:    999px;
+  --card-pad:       24px;
+  --section-gap:    48px;
+}
+
+/* Scenario workbench scoped styles */
+.scenario {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  color: var(--text);
+  background: var(--bg);
+}
+
+.scenario-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--card-pad);
+}
+
+.scenario-label {
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.scenario-hero {
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.scenario-h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.scenario-h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.scenario-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
