@@ -6,7 +6,7 @@ import { canAfford } from '@/lib/engine/affordability';
 import { EVENTS, POSITION, ASSUMPTIONS } from '@/lib/engine/scenarios';
 import { WEATHER_RATES } from '@/lib/engine/types';
 import { supabase } from '@/lib/supabase';
-import type { ScenarioEvent, Assumptions, SimResult, AffordabilityReport, WeatherBand, EventStatus, Position } from '@/lib/engine/types';
+import type { ScenarioEvent, Assumptions, SimResult, AffordabilityReport, WeatherBand, EventStatus, Position, Block } from '@/lib/engine/types';
 
 const STORAGE_KEY = 'scenario:v5';
 
@@ -21,6 +21,7 @@ interface ScenarioCtx {
   toggleEvent: (id: string, enabled: boolean) => void;
   updateEventStatus: (id: string, status: EventStatus) => void;
   updateEventDate: (id: string, newDate: string) => void;
+  updateEventBlock: (eventId: string, blockId: string, patch: Partial<Block>) => void;
   assumptions: Assumptions;
   updateAssumptions: (patch: Partial<Assumptions>) => void;
   setWeather: (band: WeatherBand) => void;
@@ -167,6 +168,16 @@ export default function ScenarioProvider({ children }: { children: React.ReactNo
     ));
   }, []);
 
+  const updateEventBlock = useCallback((eventId: string, blockId: string, patch: Partial<Block>) => {
+    setEvents(prev => prev.map(e => {
+      if (e.id !== eventId) return e;
+      return {
+        ...e,
+        blocks: e.blocks.map(b => b.id === blockId ? { ...b, ...patch } as Block : b),
+      };
+    }));
+  }, []);
+
   const updateEventDate = useCallback((id: string, newDate: string) => {
     setEvents(prev => prev.map(e => {
       if (e.id !== id) return e;
@@ -195,7 +206,7 @@ export default function ScenarioProvider({ children }: { children: React.ReactNo
 
   return (
     <Ctx.Provider value={{
-      events, toggleEvent, updateEventStatus, updateEventDate,
+      events, toggleEvent, updateEventStatus, updateEventDate, updateEventBlock,
       assumptions, updateAssumptions, setWeather,
       result, getAffordability,
       position, updatePosition, positionUpdatedAt,

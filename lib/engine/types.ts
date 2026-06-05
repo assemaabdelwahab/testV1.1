@@ -89,6 +89,12 @@ export interface MonthPoint {
   egpUsdRate: number;
   surplusUSD: number;
   retirementTargetUSD: number;
+  // Composition breakdown
+  cashUSD: number;
+  egxUSD: number;
+  goldUSD: number;
+  houseUSD: number;
+  debtUSD: number;
 }
 
 export interface ComfortPoint {
@@ -96,6 +102,8 @@ export interface ComfortPoint {
   debtServicePct: number; // debt payments / gross income %
   savingsRate: number; // surplus / gross income %
   liquidityMonths: number; // rough months of expenses covered by liquid pool
+  livingExpensesPct: number; // base living-expenses block as % of income
+  eventExpensesPct: number; // recurring event costs (kids etc) as % of income
 }
 
 export interface SimResult {

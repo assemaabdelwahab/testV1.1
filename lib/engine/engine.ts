@@ -187,7 +187,16 @@ export function simulate(
     const retirementSpendEGP = retirementMonthlySpendEGP * Math.pow(1 + egpDevaluationRate, t / 12);
     const retirementTargetUSD = (retirementSpendEGP * 12 / egpUsd) / swr;
 
-    netWorthPath.push({ month, netWorthUSD: netWorth, egpUsdRate: egpUsd, surplusUSD: surplus, retirementTargetUSD });
+    // Composition breakdown for chart
+    const egxUSD = toUSD(assetValues.get('egx-stocks') ?? 0, 'EGP', egpUsd);
+    const goldUSD = assetValues.get('gold') ?? 0; // gold is USD
+    const houseUSD = toUSD(assetValues.get('house-2nd') ?? 0, 'EGP', egpUsd);
+    const debtUSD = liabilitiesUSD;
+
+    netWorthPath.push({
+      month, netWorthUSD: netWorth, egpUsdRate: egpUsd, surplusUSD: surplus, retirementTargetUSD,
+      cashUSD: cashUSD + investedUSD, egxUSD, goldUSD, houseUSD, debtUSD,
+    });
 
     // 5. Freedom checks
     if (!freedomDate && netWorth >= retirementTargetUSD) freedomDate = month;
@@ -204,11 +213,28 @@ export function simulate(
         debtLikeUSD += Math.abs(toUSD(grown, b.currency, egpUsd));
       }
     }
+    // Base living-expenses block (id: 'living-expenses')
+    let livingExpensesUSD = 0;
+    // Event recurring expenses (non-debt-like negative RecurringCashflows that aren't living-expenses)
+    let eventExpensesUSD = 0;
+    for (const b of enabledBlocks) {
+      if (b.type === 'RecurringCashflow' && b.amount < 0 && !b.isDebtLike) {
+        if (month < b.startDate) continue;
+        if (b.endDate && month > b.endDate) continue;
+        const grown = growAmount(b.amount, b.rateSchedule, b.startDate, month);
+        const usd = Math.abs(toUSD(grown, b.currency, egpUsd));
+        if (b.id === 'living-expenses') livingExpensesUSD += usd;
+        else eventExpensesUSD += usd;
+      }
+    }
+
     const totalDebtRatioUSD = totalDebtServiceUSD + debtLikeUSD;
     const debtServicePct = totalIncomeUSD > 0 ? (totalDebtRatioUSD / totalIncomeUSD) * 100 : 0;
     const savingsRate = totalIncomeUSD > 0 ? (Math.max(0, surplus) / totalIncomeUSD) * 100 : 0;
     const liquidityMonths = totalOutflowUSD > 0 ? investedUSD / totalOutflowUSD : 99;
-    comfortTimeline.push({ month, debtServicePct, savingsRate, liquidityMonths });
+    const livingExpensesPct = totalIncomeUSD > 0 ? (livingExpensesUSD / totalIncomeUSD) * 100 : 0;
+    const eventExpensesPct = totalIncomeUSD > 0 ? (eventExpensesUSD / totalIncomeUSD) * 100 : 0;
+    comfortTimeline.push({ month, debtServicePct, savingsRate, liquidityMonths, livingExpensesPct, eventExpensesPct });
 
     if (t === 0) debtServicePctT0 = debtServicePct;
   }

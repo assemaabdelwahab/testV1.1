@@ -13,6 +13,7 @@ import EventCard from '@/components/scenario/EventCard';
 import StatChip from '@/components/scenario/StatChip';
 import PositionDrawer from '@/components/scenario/PositionDrawer';
 import AssumptionsDrawer from '@/components/scenario/AssumptionsDrawer';
+import EventStatusBar from '@/components/scenario/EventStatusBar';
 import { fmtUSD } from '@/lib/format';
 
 export default function ScenarioPage() {
@@ -87,6 +88,7 @@ function Workbench() {
         <SectionHeader label="Your Trajectory" />
         <section className="scenario-card flex flex-col gap-6">
           <FreedomHeadline />
+          <EventStatusBar />
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <CurrencyWeather />
           </div>

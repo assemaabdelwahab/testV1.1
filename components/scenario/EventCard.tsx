@@ -3,9 +3,10 @@
 import { useState, useCallback } from 'react';
 import { useScenario } from './ScenarioProvider';
 import { usePrivacy } from '@/components/PrivacyProvider';
+import { EVENTS } from '@/lib/engine/scenarios';
 import { ageAt } from '@/lib/age';
 import { fmtMonth } from '@/lib/format';
-import type { ScenarioEvent, EventStatus, FundingOption } from '@/lib/engine/types';
+import type { ScenarioEvent, EventStatus, FundingOption, Block } from '@/lib/engine/types';
 
 interface Props { event: ScenarioEvent; }
 
@@ -36,10 +37,14 @@ const STATUS_CONFIG: Record<EventStatus, { label: string; color: string; bg: str
 };
 
 export default function EventCard({ event }: Props) {
-  const { updateEventStatus, updateEventDate, getAffordability, assumptions } = useScenario();
+  const { updateEventStatus, updateEventDate, updateEventBlock, getAffordability, assumptions } = useScenario();
   const { s } = usePrivacy();
   const [expanded, setExpanded] = useState(false);
+  const [adjustOpen, setAdjustOpen] = useState(false);
   const [dateInput, setDateInput] = useState(() => getProposedDate(event));
+
+  // Default blocks for reset
+  const defaultBlocks = EVENTS.find(e => e.id === event.id)?.blocks ?? [];
 
   const report = expanded ? getAffordability(event.id) : null;
   const status = event.status ?? 'hypothetical';
@@ -145,6 +150,24 @@ export default function EventCard({ event }: Props) {
                 fontFamily: 'var(--font-body)', fontSize: 'var(--fs-sm)', cursor: 'pointer',
               }}
             />
+          </div>
+
+          {/* Adjust amounts */}
+          <div>
+            <button
+              onClick={() => setAdjustOpen(p => !p)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 'var(--fs-sm)', padding: 0, fontFamily: 'var(--font-body)' }}
+            >
+              {adjustOpen ? '▾' : '▸'} Adjust amounts
+            </button>
+            {adjustOpen && (
+              <div className="flex flex-col gap-3 mt-3">
+                {event.blocks.map(block => {
+                  const defaultBlock = defaultBlocks.find(b => b.id === block.id);
+                  return <BlockEditor key={block.id} block={block} defaultBlock={defaultBlock} eventId={event.id} updateBlock={updateEventBlock} />;
+                })}
+              </div>
+            )}
           </div>
 
           {report ? (
@@ -266,4 +289,97 @@ function getProposedDate(event: ScenarioEvent): string {
     if (b.type === 'RecurringCashflow') return b.startDate;
   }
   return '2026-06';
+}
+
+function BlockEditor({ block, defaultBlock, eventId, updateBlock }: {
+  block: Block;
+  defaultBlock: Block | undefined;
+  eventId: string;
+  updateBlock: (eventId: string, blockId: string, patch: Partial<Block>) => void;
+}) {
+  const inputStyle = {
+    background: 'var(--surface-2)', border: '1px solid var(--border)',
+    borderRadius: 6, padding: '4px 8px', color: 'var(--text)',
+    fontFamily: 'var(--font-mono)', fontSize: 13, width: '100%',
+  };
+
+  const isDefault = JSON.stringify(block) === JSON.stringify(defaultBlock);
+
+  if (block.type === 'OneTimeCashflow') {
+    const currency = block.currency;
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
+            Cost ({currency})
+          </span>
+          {!isDefault && (
+            <button
+              onClick={() => defaultBlock && updateBlock(eventId, block.id, defaultBlock)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--brand)', fontSize: 11, padding: 0 }}
+            >
+              reset
+            </button>
+          )}
+        </div>
+        <input
+          type="number"
+          value={Math.abs(block.amount)}
+          style={inputStyle}
+          onChange={e => {
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v)) updateBlock(eventId, block.id, { amount: -Math.abs(v) } as Partial<Block>);
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (block.type === 'RecurringCashflow') {
+    const currency = block.currency;
+    const rate = block.rateSchedule?.[0]?.rate ?? 0;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Monthly cost ({currency})</span>
+          {!isDefault && (
+            <button
+              onClick={() => defaultBlock && updateBlock(eventId, block.id, defaultBlock)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--brand)', fontSize: 11, padding: 0 }}
+            >
+              reset
+            </button>
+          )}
+        </div>
+        <input
+          type="number"
+          value={Math.abs(block.amount)}
+          style={inputStyle}
+          onChange={e => {
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v)) updateBlock(eventId, block.id, { amount: -Math.abs(v) } as Partial<Block>);
+          }}
+        />
+        <div className="flex items-center gap-2">
+          <span style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>Growth %/yr</span>
+          <input
+            type="number"
+            min={0} max={30} step={1}
+            value={Math.round(rate * 100)}
+            style={{ ...inputStyle, width: 80 }}
+            onChange={e => {
+              const v = parseFloat(e.target.value);
+              if (!isNaN(v)) {
+                const newSchedule = [{ effectiveFrom: block.startDate, rate: v / 100 }];
+                updateBlock(eventId, block.id, { rateSchedule: newSchedule } as Partial<Block>);
+              }
+            }}
+          />
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>%</span>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
