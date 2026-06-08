@@ -9,10 +9,11 @@ import { useScenario } from './ScenarioProvider';
 import { usePrivacy } from '@/components/PrivacyProvider';
 import { ageAt } from '@/lib/age';
 import { fmtUSD, fmtMonth } from '@/lib/format';
+import type { MonthPoint } from '@/lib/engine/types';
 
 const SAMPLE_EVERY = 3;
 
-export default function NetWorthChart() {
+export default function NetWorthChart({ secondaryPath }: { secondaryPath?: MonthPoint[] }) {
   const { result, assumptions } = useScenario();
   const { s } = usePrivacy();
   const { netWorthPath, freedomDate, freedomDateM1 } = result;
@@ -36,6 +37,21 @@ export default function NetWorthChart() {
       debt: Math.round(pt.debtUSD),
     }));
 
+  const secondaryData = secondaryPath
+    ? secondaryPath
+        .filter((_, i) => i % SAMPLE_EVERY === 0)
+        .map(pt => ({
+          month: pt.month,
+          age: ageAt(pt.month, birthDate),
+          nw2: Math.min(Math.round(pt.netWorthUSD), yMax),
+        }))
+    : null;
+
+  const mergedData = data.map((pt, i) => ({
+    ...pt,
+    nw2: secondaryData?.[i]?.nw2,
+  }));
+
   const btnStyle = (active: boolean) => ({
     padding: '3px 10px', borderRadius: 6, cursor: 'pointer',
     fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-body)',
@@ -56,7 +72,7 @@ export default function NetWorthChart() {
 
       <ResponsiveContainer width="100%" height={300}>
         {mode === 'total' ? (
-          <AreaChart data={data} margin={{ top: 24, right: 16, left: 8, bottom: 8 }}>
+          <AreaChart data={mergedData} margin={{ top: 24, right: 16, left: 8, bottom: 8 }}>
             <defs>
               <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%"  stopColor="var(--brand)" stopOpacity={0.25} />
@@ -80,6 +96,19 @@ export default function NetWorthChart() {
                 label={{ value: `free · age ${ageAt(freedomDate, birthDate)}`, position: 'insideTopLeft', fill: 'var(--positive)', fontSize: 11, dy: -16 }} />
             )}
             <Area type="monotone" dataKey="nw" stroke="var(--brand)" strokeWidth={2} fill="url(#nwGrad)" dot={false} activeDot={{ r: 4, fill: 'var(--brand)' }} />
+            {secondaryData && (
+              <Area
+                type="monotone"
+                dataKey="nw2"
+                stroke="rgba(235,181,77,0.6)"
+                strokeWidth={1.5}
+                strokeDasharray="6 3"
+                fill="none"
+                dot={false}
+                activeDot={false}
+                name="Scenario"
+              />
+            )}
           </AreaChart>
         ) : (
           <AreaChart data={data} margin={{ top: 24, right: 16, left: 8, bottom: 8 }} stackOffset="none">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import '@/styles/tokens.css';
 import ScenarioProvider, { useScenario } from '@/components/scenario/ScenarioProvider';
+import ParallelScenarioProvider, { useParallelScenario } from '@/components/scenario/ParallelScenarioProvider';
 import PrivacyProvider, { usePrivacy } from '@/components/PrivacyProvider';
 import FreedomHeadline from '@/components/scenario/FreedomHeadline';
 import CurrencyWeather from '@/components/scenario/CurrencyWeather';
@@ -15,31 +16,60 @@ import PositionDrawer from '@/components/scenario/PositionDrawer';
 import AssumptionsDrawer from '@/components/scenario/AssumptionsDrawer';
 import EventStatusBar from '@/components/scenario/EventStatusBar';
 import DriftPanel from '@/components/scenario/DriftPanel';
+import ComparisonBar from '@/components/scenario/ComparisonBar';
+import ScenarioNarrativeCard from '@/components/scenario/ScenarioNarrativeCard';
 import { fmtUSD } from '@/lib/format';
+
+// ScenarioManager is created in Task 6 — stub it so the page compiles now
+function ScenarioManager({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
+      <div style={{ background: 'var(--surface)', width: '100%', padding: 24, borderRadius: '16px 16px 0 0' }} onClick={e => e.stopPropagation()}>
+        <p style={{ color: 'var(--text-2)', margin: 0 }}>Scenario manager coming in next task.</p>
+      </div>
+    </div>
+  );
+}
 
 export default function ScenarioPage() {
   return (
     <PrivacyProvider>
       <ScenarioProvider>
-        <Workbench />
+        <InnerProviders />
       </ScenarioProvider>
     </PrivacyProvider>
   );
 }
 
+function InnerProviders() {
+  const { result, events, assumptions, position } = useScenario();
+  return (
+    <ParallelScenarioProvider
+      baselineResult={result}
+      baselineEvents={events}
+      baselineAssumptions={assumptions}
+      baselinePosition={position}
+    >
+      <Workbench />
+    </ParallelScenarioProvider>
+  );
+}
+
 function Workbench() {
   const { result, events, assumptions, latestDrift } = useScenario();
+  const { activeScenarioId, scenarioResult, scenarioDelta } = useParallelScenario();
   const { privacy, togglePrivacy, s } = usePrivacy();
   const [posOpen, setPosOpen] = useState(false);
   const [assOpen, setAssOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
 
   const nonBaseEvents = events.filter(e => e.id !== 'base');
-  const totalEventDelta = nonBaseEvents
-    .filter(e => e.enabled)
-    .reduce((sum, e) => {
-      // sum contributed by enabled events — computed live from result
-      return sum;
-    }, 0);
+  const inComparison = activeScenarioId !== null;
+
+  const comparisonRing = inComparison
+    ? { outline: '2px solid rgba(235,181,77,0.35)', outlineOffset: 2, borderRadius: 12 }
+    : {};
 
   return (
     <div className="scenario min-h-screen" style={{ paddingBottom: 80 }}>
@@ -53,7 +83,7 @@ function Workbench() {
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>
             Scenario
           </span>
-          {latestDrift && (
+          {latestDrift && !inComparison && (
             <span style={{
               fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
               background: latestDrift.deltaUsd >= 0 ? 'rgba(111,185,140,0.15)' : 'rgba(220,60,60,0.12)',
@@ -68,40 +98,48 @@ function Workbench() {
         </div>
         <div className="flex gap-2 items-center">
           <button
-            onClick={() => setPosOpen(true)}
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--text-2)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+            onClick={() => setManagerOpen(true)}
+            style={{
+              background: inComparison ? 'rgba(235,181,77,0.15)' : 'var(--surface)',
+              border: `1px solid ${inComparison ? 'rgba(235,181,77,0.5)' : 'var(--border)'}`,
+              borderRadius: 8, padding: '6px 14px',
+              color: inComparison ? 'var(--brand)' : 'var(--text-2)',
+              fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
           >
+            <span style={{ fontSize: 14 }}>⑂</span>
+            <span>Branch</span>
+          </button>
+          <button onClick={() => setPosOpen(true)}
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--text-2)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
             Holdings
           </button>
-          <button
-            onClick={() => setAssOpen(true)}
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--text-2)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-          >
+          <button onClick={() => setAssOpen(true)}
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--text-2)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
             ⚙ Assumptions
           </button>
-          {/* Privacy toggle */}
-          <button
-            onClick={togglePrivacy}
-            title={privacy ? 'Show numbers' : 'Hide numbers'}
+          <button onClick={togglePrivacy}
             style={{
               background: privacy ? 'rgba(235,181,77,0.15)' : 'var(--surface)',
               border: `1px solid ${privacy ? 'rgba(235,181,77,0.4)' : 'var(--border)'}`,
               borderRadius: 8, padding: '6px 10px',
               color: privacy ? 'var(--brand)' : 'var(--text-3)',
               fontSize: 16, cursor: 'pointer', lineHeight: 1,
-            }}
-          >
+            }}>
             {privacy ? '🔒' : '🔓'}
           </button>
         </div>
       </header>
 
-      {/* Workbench scroll */}
+      <ComparisonBar />
+
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 20px', display: 'flex', flexDirection: 'column', gap: 'var(--section-gap)' }}>
 
-        {/* ── YOUR TRAJECTORY ── */}
-        <SectionHeader label="Your Trajectory" />
-        <section className="scenario-card flex flex-col gap-6">
+        {inComparison && <ScenarioNarrativeCard />}
+
+        <SectionHeader label={inComparison ? 'Trajectory (scenario)' : 'Your Trajectory'} />
+        <section className="scenario-card flex flex-col gap-6" style={inComparison ? comparisonRing : {}}>
           <FreedomHeadline />
           <EventStatusBar />
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -110,69 +148,59 @@ function Workbench() {
         </section>
 
         <section className="scenario-card">
-          <NetWorthChart />
-          <div
-            className="grid gap-3 mt-6"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}
-          >
-            <StatChip
-              label="Net worth today"
-              value={s(fmtUSD(result.netWorthT0))}
-              tag="measured"
-            />
-            <StatChip
-              label="Monthly surplus"
-              value={s(fmtUSD(result.surplusT0))}
-              tag="measured"
-            />
-            <StatChip
-              label="Debt-service"
-              value={`${result.debtServicePctT0.toFixed(1)}%`}
-              tag="measured"
-              sub="of gross income"
-            />
-            <StatChip
-              label="Savings rate"
-              value={`${result.comfortTimeline[0] ? result.comfortTimeline[0].savingsRate.toFixed(0) : '—'}%`}
-              tag="measured"
-            />
+          <NetWorthChart secondaryPath={inComparison && scenarioResult ? scenarioResult.netWorthPath : undefined} />
+          <div className="grid gap-3 mt-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+            <StatChip label="Net worth today" value={s(fmtUSD(result.netWorthT0))} tag="measured" />
+            <StatChip label="Monthly surplus" value={s(fmtUSD(result.surplusT0))} tag="measured" />
+            <StatChip label="Debt-service" value={`${result.debtServicePctT0.toFixed(1)}%`} tag="measured" sub="of gross income" />
+            <StatChip label="Savings rate" value={`${result.comfortTimeline[0] ? result.comfortTimeline[0].savingsRate.toFixed(0) : '—'}%`} tag="measured" />
           </div>
         </section>
 
-        {/* ── FINANCIAL COMFORT ── */}
         <SectionHeader label="Financial Comfort" />
         <section className="scenario-card">
-          <ComfortChart />
+          <ComfortChart secondaryTimeline={inComparison && scenarioResult ? scenarioResult.comfortTimeline : undefined} />
         </section>
 
-        {/* ── REALITY CHECK ── */}
-        <SectionHeader label="Reality Check" />
-        <section className="scenario-card">
-          <DriftPanel />
-        </section>
+        {!inComparison && (
+          <>
+            <SectionHeader label="Reality Check" />
+            <section className="scenario-card">
+              <DriftPanel />
+            </section>
+          </>
+        )}
 
-        {/* ── LIFE EVENTS ── */}
-        <SectionHeader label="Life Events" />
-        <section className="flex flex-col gap-4">
-          <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-3)', marginBottom: 4 }}>
-            Each event shows its cost in freedom months. COMMITTED and PLANNING events are included in your trajectory above.
-          </p>
+        <SectionHeader label={inComparison ? 'Life Events (scenario)' : 'Life Events'} />
+        <section className="flex flex-col gap-4" style={inComparison ? comparisonRing : {}}>
+          {!inComparison && (
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-3)', marginBottom: 4 }}>
+              Each event shows its cost in freedom months. COMMITTED and PLANNING events are included in your trajectory above.
+            </p>
+          )}
+          {inComparison && (
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'rgba(235,181,77,0.8)', marginBottom: 4 }}>
+              Editing scenario — changes here affect the scenario only, not your baseline.
+            </p>
+          )}
           {nonBaseEvents.map(event => (
             <EventCard key={event.id} event={event} />
           ))}
         </section>
 
-        {/* ── ABOUT THIS MODEL ── */}
-        <SectionHeader label="About This Model" />
-        <section className="scenario-card">
-          <FactCheckRibbon />
-        </section>
-
+        {!inComparison && (
+          <>
+            <SectionHeader label="About This Model" />
+            <section className="scenario-card">
+              <FactCheckRibbon />
+            </section>
+          </>
+        )}
       </div>
 
-      {/* Drawers */}
       <PositionDrawer open={posOpen} onClose={() => setPosOpen(false)} />
       <AssumptionsDrawer open={assOpen} onClose={() => setAssOpen(false)} />
+      <ScenarioManager open={managerOpen} onClose={() => setManagerOpen(false)} />
     </div>
   );
 }

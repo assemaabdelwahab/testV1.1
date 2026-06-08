@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer,
@@ -7,10 +8,11 @@ import {
 import { useScenario } from './ScenarioProvider';
 import { ageAt } from '@/lib/age';
 import { fmtMonth } from '@/lib/format';
+import type { ComfortPoint } from '@/lib/engine/types';
 
 const SAMPLE_EVERY = 3;
 
-export default function ComfortChart() {
+export default function ComfortChart({ secondaryTimeline }: { secondaryTimeline?: ComfortPoint[] }) {
   const { result, assumptions } = useScenario();
   const { comfortTimeline } = result;
   const { birthDate } = assumptions;
@@ -33,6 +35,29 @@ export default function ComfortChart() {
       };
     });
 
+  const [view, setView] = useState<'baseline' | 'scenario'>('scenario');
+
+  const scenarioData = secondaryTimeline
+    ? secondaryTimeline
+        .filter((_, i) => i % SAMPLE_EVERY === 0)
+        .map(pt => {
+          const ds  = Math.max(0, Math.min(pt.debtServicePct,    100));
+          const liv = Math.max(0, Math.min(pt.livingExpensesPct, 100 - ds));
+          const evt = Math.max(0, Math.min(pt.eventExpensesPct,  100 - ds - liv));
+          const sav = Math.max(0, 100 - ds - liv - evt);
+          return {
+            month: pt.month,
+            age: ageAt(pt.month, birthDate),
+            debt:   Math.round(ds  * 10) / 10,
+            living: Math.round(liv * 10) / 10,
+            events: Math.round(evt * 10) / 10,
+            savings:Math.round(sav * 10) / 10,
+          };
+        })
+    : null;
+
+  const chartData = secondaryTimeline && view === 'scenario' ? (scenarioData ?? data) : data;
+
   const payoffPoint = comfortTimeline.find(
     (pt, i) => i > 0 && pt.debtServicePct < 0.5,
   );
@@ -48,10 +73,27 @@ export default function ComfortChart() {
 
   return (
     <div className="flex flex-col gap-4">
-      <span className="scenario-label">comfort timeline · income composition</span>
+      <div className="flex items-center justify-between">
+        <span className="scenario-label">financial comfort</span>
+        {secondaryTimeline && (
+          <div className="flex gap-1">
+            {(['baseline', 'scenario'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} style={{
+                padding: '3px 10px', borderRadius: 6, cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-body)',
+                background: view === v ? 'rgba(235,181,77,0.15)' : 'var(--surface-2)',
+                border: `1px solid ${view === v ? 'rgba(235,181,77,0.4)' : 'var(--border)'}`,
+                color: view === v ? 'var(--brand)' : 'var(--text-3)',
+              }}>
+                {v.charAt(0).toUpperCase() + v.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 8 }} stackOffset="none">
+        <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }} stackOffset="none">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
           <XAxis
             dataKey="age"
