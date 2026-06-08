@@ -6,6 +6,7 @@ import ScenarioProvider, { useScenario } from '@/components/scenario/ScenarioPro
 import ParallelScenarioProvider, { useParallelScenario } from '@/components/scenario/ParallelScenarioProvider';
 import PrivacyProvider, { usePrivacy } from '@/components/PrivacyProvider';
 import FreedomHeadline from '@/components/scenario/FreedomHeadline';
+import SolvencyBreakHeadline from '@/components/scenario/SolvencyBreakHeadline';
 import CurrencyWeather from '@/components/scenario/CurrencyWeather';
 import FactCheckRibbon from '@/components/scenario/FactCheckRibbon';
 import NetWorthChart from '@/components/scenario/NetWorthChart';
@@ -129,7 +130,14 @@ function Workbench() {
 
         <SectionHeader label={inComparison ? 'Trajectory (scenario)' : 'Your Trajectory'} />
         <section className="scenario-card flex flex-col gap-6" style={inComparison ? comparisonRing : {}}>
-          <FreedomHeadline />
+          {inComparison && scenarioDelta && scenarioDelta.solvencyBreaks.length > 0 ? (
+            <SolvencyBreakHeadline
+              firstBreakMonth={scenarioDelta.solvencyBreaks[0]}
+              totalBreaks={scenarioDelta.solvencyBreaks.length}
+            />
+          ) : (
+            <FreedomHeadline />
+          )}
           <EventStatusBar />
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <CurrencyWeather />
