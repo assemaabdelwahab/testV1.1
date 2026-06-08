@@ -18,19 +18,8 @@ import EventStatusBar from '@/components/scenario/EventStatusBar';
 import DriftPanel from '@/components/scenario/DriftPanel';
 import ComparisonBar from '@/components/scenario/ComparisonBar';
 import ScenarioNarrativeCard from '@/components/scenario/ScenarioNarrativeCard';
+import { ScenarioManager } from '@/components/scenario/ScenarioManager';
 import { fmtUSD } from '@/lib/format';
-
-// ScenarioManager is created in Task 6 — stub it so the page compiles now
-function ScenarioManager({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null;
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40, display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div style={{ background: 'var(--surface)', width: '100%', padding: 24, borderRadius: '16px 16px 0 0' }} onClick={e => e.stopPropagation()}>
-        <p style={{ color: 'var(--text-2)', margin: 0 }}>Scenario manager coming in next task.</p>
-      </div>
-    </div>
-  );
-}
 
 export default function ScenarioPage() {
   return (

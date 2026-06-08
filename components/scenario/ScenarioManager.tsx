@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useScenario } from './ScenarioProvider';
 import { useParallelScenario } from './ParallelScenarioProvider';
 import { MAX_SCENARIOS } from '@/lib/scenario/storage';
+import { ScenarioCreatorSheet } from './ScenarioCreatorSheet';
 
 interface Props {
   open: boolean;
@@ -158,7 +159,3 @@ export function ScenarioManager({ open, onClose }: Props) {
   );
 }
 
-// Temporary stub — replaced when ScenarioCreatorSheet.tsx lands
-function ScenarioCreatorSheet(_: { open: boolean; onClose: () => void; onCreated: (id: string) => void; baseEvents: unknown[]; baseAssumptions: unknown }) {
-  return null;
-}
